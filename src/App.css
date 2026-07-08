@@ -195,15 +195,7 @@
   align-items: start;
 }
 
-@media (max-width: 900px) {
-  .workspace-grid {
-    grid-template-columns: 1fr;
-  }
-  .task-form-panel {
-    position: relative;
-    top: 0;
-  }
-}
+
 
 /* Form Controls */
 .task-form-panel {
@@ -716,5 +708,15 @@
   .export-btn {
     flex: 1;
     justify-content: center;
+  }
+}
+
+@media (max-width: 900px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+  .task-form-panel {
+    position: relative;
+    top: 0;
   }
 }
