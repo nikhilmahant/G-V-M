@@ -12,9 +12,10 @@ import {
   Languages, 
   Calendar, 
   AlertCircle, 
-  CheckCircle2, 
+  CheckCircle2,
   Clock, 
   Filter, 
+  Download, 
   X,
   ListTodo,
   CheckSquare
@@ -67,6 +68,7 @@ function App() {
   const [priority, setPriority] = useState<Task['priority']>('medium');
   const [dueDate, setDueDate] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
 
   // Filters & Sorting
   const [searchQuery, setSearchQuery] = useState('');
@@ -99,6 +101,24 @@ function App() {
   useEffect(() => {
     setCategory(t.work);
   }, [lang]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setInstallPrompt(null);
+    }
+  };
 
   // --- TOAST HELPER ---
   const showToast = (message: string, type: Toast['type'] = 'success') => {
@@ -258,6 +278,18 @@ function App() {
             <Languages size={18} />
             <span>{lang === 'en' ? 'ಕನ್ನಡ' : 'English'}</span>
           </button>
+
+          {installPrompt && (
+            <button 
+              className="control-btn" 
+              onClick={handleInstallApp}
+              style={{ background: 'linear-gradient(135deg, var(--success) 0%, var(--accent-primary) 100%)', color: 'white', border: 'none' }}
+              title="Install G V M Work list / ಆಪ್ ಇನ್‌ಸ್ಟಾಲ್ ಮಾಡಿ"
+            >
+              <Download size={18} />
+              <span>Install / ಇನ್‌ಸ್ಟಾಲ್</span>
+            </button>
+          )}
 
           {/* Theme Switcher */}
           <button 
