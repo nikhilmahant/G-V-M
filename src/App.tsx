@@ -76,10 +76,14 @@ function App() {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
 
   // Supabase Sync states
-  const [sbUrl, setSbUrl] = useState(() => localStorage.getItem('gvm_supabase_url') || '');
-  const [sbKey, setSbKey] = useState(() => localStorage.getItem('gvm_supabase_key') || '');
+  const [sbUrl, setSbUrl] = useState(() => localStorage.getItem('gvm_supabase_url') || (import.meta.env.VITE_SUPABASE_URL as string) || '');
+  const [sbKey, setSbKey] = useState(() => localStorage.getItem('gvm_supabase_key') || (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || '');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [supabase, setSupabase] = useState(() => initSupabase(localStorage.getItem('gvm_supabase_url') || '', localStorage.getItem('gvm_supabase_key') || ''));
+  const [supabase, setSupabase] = useState(() => {
+    const url = localStorage.getItem('gvm_supabase_url') || (import.meta.env.VITE_SUPABASE_URL as string) || '';
+    const key = localStorage.getItem('gvm_supabase_key') || (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || '';
+    return initSupabase(url, key);
+  });
 
   // Filters & Sorting
   const [searchQuery, setSearchQuery] = useState('');
@@ -115,14 +119,13 @@ function App() {
 
   // --- SUPABASE EFFECTS & HELPERS ---
   useEffect(() => {
-    const client = initSupabase(sbUrl, sbKey);
+    const activeUrl = sbUrl || (import.meta.env.VITE_SUPABASE_URL as string) || '';
+    const activeKey = sbKey || (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || '';
+    const client = initSupabase(activeUrl, activeKey);
     setSupabase(client);
-    if (client) {
+    if (sbUrl && sbKey) {
       localStorage.setItem('gvm_supabase_url', sbUrl);
       localStorage.setItem('gvm_supabase_key', sbKey);
-    } else {
-      localStorage.removeItem('gvm_supabase_url');
-      localStorage.removeItem('gvm_supabase_key');
     }
   }, [sbUrl, sbKey]);
 
