@@ -18,11 +18,16 @@ import {
   Download, 
   X,
   ListTodo,
-  CheckSquare
+  CheckSquare,
+  Cloud,
+  CloudOff,
+  Database,
+  Upload
 } from 'lucide-react';
 import { translations } from './i18n';
 import type { Language } from './i18n';
 import { exportToExcel, exportToPdf } from './utils/export';
+import { initSupabase } from './utils/supabaseClient';
 import './App.css';
 
 export interface Task {
@@ -70,6 +75,12 @@ function App() {
   const [assignedTo, setAssignedTo] = useState('');
   const [installPrompt, setInstallPrompt] = useState<any>(null);
 
+  // Supabase Sync states
+  const [sbUrl, setSbUrl] = useState(() => localStorage.getItem('gvm_supabase_url') || '');
+  const [sbKey, setSbKey] = useState(() => localStorage.getItem('gvm_supabase_key') || '');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [supabase, setSupabase] = useState(() => initSupabase(localStorage.getItem('gvm_supabase_url') || '', localStorage.getItem('gvm_supabase_key') || ''));
+
   // Filters & Sorting
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
@@ -101,6 +112,86 @@ function App() {
   useEffect(() => {
     setCategory(t.work);
   }, [lang]);
+
+  // --- SUPABASE EFFECTS & HELPERS ---
+  useEffect(() => {
+    const client = initSupabase(sbUrl, sbKey);
+    setSupabase(client);
+    if (client) {
+      localStorage.setItem('gvm_supabase_url', sbUrl);
+      localStorage.setItem('gvm_supabase_key', sbKey);
+    } else {
+      localStorage.removeItem('gvm_supabase_url');
+      localStorage.removeItem('gvm_supabase_key');
+    }
+  }, [sbUrl, sbKey]);
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    const fetchTasks = async () => {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .order('createdAt', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching tasks from Supabase:', error);
+        showToast('Failed to sync from cloud!', 'deleted');
+      } else if (data) {
+        setTasks(data);
+        showToast('Synced with Supabase!', 'success');
+      }
+    };
+
+    fetchTasks();
+  }, [supabase]);
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tasks' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newTask = payload.new as Task;
+            setTasks((prev) => {
+              if (prev.some((t) => t.id === newTask.id)) return prev;
+              return [newTask, ...prev];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedTask = payload.new as Task;
+            setTasks((prev) =>
+              prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            const deletedId = (payload.old as { id: string }).id;
+            setTasks((prev) => prev.filter((t) => t.id !== deletedId));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]);
+
+  const handleUploadLocalTasks = async () => {
+    if (!supabase || tasks.length === 0) return;
+    showToast('Uploading tasks...', 'info');
+    
+    const { error } = await supabase.from('tasks').insert(tasks);
+    if (error) {
+      console.error('Error uploading local tasks:', error);
+      showToast('Upload failed! (Duplicates?)', 'deleted');
+    } else {
+      showToast('All tasks uploaded to cloud!', 'success');
+    }
+  };
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -146,6 +237,15 @@ function App() {
       createdAt: new Date().toISOString(),
     };
 
+    if (supabase) {
+      supabase.from('tasks').insert(newTask).then(({ error }) => {
+        if (error) {
+          console.error(error);
+          showToast('Cloud save failed!', 'deleted');
+        }
+      });
+    }
+
     setTasks((prev) => [newTask, ...prev]);
     showToast(t.taskAddedSuccess, 'success');
 
@@ -162,6 +262,22 @@ function App() {
     e.preventDefault();
     if (!editingTask || !editingTask.title.trim()) return;
 
+    if (supabase) {
+      supabase.from('tasks').update({
+        title: editingTask.title,
+        description: editingTask.description,
+        category: editingTask.category,
+        priority: editingTask.priority,
+        dueDate: editingTask.dueDate,
+        assignedTo: editingTask.assignedTo
+      }).eq('id', editingTask.id).then(({ error }) => {
+        if (error) {
+          console.error(error);
+          showToast('Cloud update failed!', 'deleted');
+        }
+      });
+    }
+
     setTasks((prev) =>
       prev.map((task) => (task.id === editingTask.id ? editingTask : task))
     );
@@ -170,15 +286,37 @@ function App() {
   };
 
   const handleDeleteTask = (id: string) => {
+    if (supabase) {
+      supabase.from('tasks').delete().eq('id', id).then(({ error }) => {
+        if (error) {
+          console.error(error);
+          showToast('Cloud delete failed!', 'deleted');
+        }
+      });
+    }
+
     setTasks((prev) => prev.filter((task) => task.id !== id));
     setDeletingTaskId(null);
     showToast(t.taskDeletedSuccess, 'deleted');
   };
 
   const toggleTaskStatus = (id: string) => {
+    const target = tasks.find(t => t.id === id);
+    if (!target) return;
+    const nextCompleted = !target.completed;
+
+    if (supabase) {
+      supabase.from('tasks').update({ completed: nextCompleted }).eq('id', id).then(({ error }) => {
+        if (error) {
+          console.error(error);
+          showToast('Cloud toggle failed!', 'deleted');
+        }
+      });
+    }
+
     setTasks((prev) =>
       prev.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task
+        task.id === id ? { ...task, completed: nextCompleted } : task
       )
     );
     showToast(t.toastToggled, 'info');
@@ -269,6 +407,17 @@ function App() {
         </div>
         
         <div className="header-controls">
+          {/* Supabase Sync Button */}
+          <button 
+            className="control-btn" 
+            onClick={() => setIsSettingsOpen(true)}
+            title="Cloud Sync Settings / ಕ್ಲೌಡ್ ಸಿಂಕ್ ಸೆಟ್ಟಿಂಗ್ಸ್"
+            style={{ borderColor: supabase ? 'var(--success)' : '' }}
+          >
+            {supabase ? <Cloud size={18} style={{ color: 'var(--success)' }} /> : <CloudOff size={18} />}
+            <span>{supabase ? 'Synced / ಕ್ಲೌಡ್ ಸಿಂಕ್' : 'Local / ಲೋಕಲ್'}</span>
+          </button>
+
           {/* Language Switcher */}
           <button 
             className="control-btn lang-toggle" 
@@ -736,6 +885,107 @@ function App() {
               </button>
               <button className="control-btn btn-danger" onClick={() => handleDeleteTask(deletingTaskId)}>
                 {t.confirmYes}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Supabase Sync Settings Modal */}
+      {isSettingsOpen && (
+        <div className="modal-overlay">
+          <div className="glass-panel modal-content" style={{ maxWidth: '520px' }}>
+            <h2 className="modal-header" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Database size={22} className="no-tasks-icon" style={{ opacity: 1 }} />
+              <span>Cloud Sync / ಕ್ಲೌಡ್ ಸಿಂಕ್</span>
+            </h2>
+            
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+              Enable real-time task sync between multiple devices using a free Supabase database.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.5rem' }}>
+              <div className="form-group">
+                <label className="form-label">Supabase URL</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="https://your-project.supabase.co"
+                  value={sbUrl}
+                  onChange={(e) => setSbUrl(e.target.value.trim())}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Supabase Anon Key</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  placeholder="eyJhbGciOi..."
+                  value={sbKey}
+                  onChange={(e) => setSbKey(e.target.value.trim())}
+                />
+              </div>
+            </div>
+
+            {supabase && tasks.length > 0 && (
+              <div style={{ padding: '0.8rem', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--accent-bg)', border: '1px solid var(--panel-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Sync existing local tasks?</span>
+                <button className="control-btn" onClick={handleUploadLocalTasks} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>
+                  <Upload size={14} />
+                  <span>Upload to Cloud</span>
+                </button>
+              </div>
+            )}
+
+            {/* SQL Instructions */}
+            <details style={{ marginTop: '0.5rem', cursor: 'pointer' }}>
+              <summary style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-primary)' }}>
+                Database Setup Guide / ಡೇಟಾಬೇಸ್ ಗೈಡ್
+              </summary>
+              <div style={{ marginTop: '0.5rem', padding: '0.75rem', borderRadius: '4px', backgroundColor: 'var(--input-bg)', border: '1px solid var(--panel-border)', fontSize: '0.8rem', cursor: 'text', maxHeight: '180px', overflowY: 'auto' }}>
+                <p style={{ marginBottom: '0.5rem' }}>1. Create a free account at <strong>supabase.com</strong> and create a project.</p>
+                <p style={{ marginBottom: '0.5rem' }}>2. Go to the <strong>SQL Editor</strong> in Supabase and run this script to create the table:</p>
+                <pre style={{ padding: '0.5rem', backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: '4px', overflowX: 'auto', fontSize: '0.75rem', fontFamily: 'monospace' }}>
+{`create table tasks (
+  id text primary key,
+  title text not null,
+  description text,
+  category text,
+  priority text,
+  "dueDate" text,
+  "assignedTo" text,
+  completed boolean default false,
+  "createdAt" text not null
+);
+
+-- Enable Realtime
+alter publication supabase_realtime add table tasks;
+
+-- Disable RLS (or enable public access)
+alter table tasks disable row level security;`}
+                </pre>
+              </div>
+            </details>
+
+            <div className="modal-actions" style={{ marginTop: '1rem' }}>
+              {supabase && (
+                <button 
+                  type="button" 
+                  className="control-btn btn-danger" 
+                  onClick={() => {
+                    setSbUrl('');
+                    setSbKey('');
+                    setIsSettingsOpen(false);
+                    showToast('Disconnected from cloud!', 'deleted');
+                  }}
+                  style={{ marginRight: 'auto' }}
+                >
+                  Disconnect / ಕಡಿತಗೊಳಿಸಿ
+                </button>
+              )}
+              <button type="button" className="btn-primary" onClick={() => setIsSettingsOpen(false)}>
+                Close / ಮುಚ್ಚಿ
               </button>
             </div>
           </div>
