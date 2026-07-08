@@ -734,7 +734,7 @@ function App() {
 
       {/* Footer */}
       <footer style={{ marginTop: 'auto', textAlign: 'center', padding: '2rem 0 1rem 0', fontSize: '0.85rem', color: 'var(--text-muted)', borderTop: '1px solid var(--panel-border)' }}>
-        <p>© 2026 ಕನ್ನಡ To-Do Hub. Hostable on GitHub Pages.</p>
+        <p>© 2026 Developed by nikhil mahant</p>
       </footer>
     </div>
   );
