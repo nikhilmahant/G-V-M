@@ -19,8 +19,6 @@ import {
   X,
   ListTodo,
   CheckSquare,
-  Cloud,
-  CloudOff,
   Database,
   Upload
 } from 'lucide-react';
@@ -410,16 +408,7 @@ function App() {
         </div>
         
         <div className="header-controls">
-          {/* Supabase Sync Button */}
-          <button 
-            className="control-btn" 
-            onClick={() => setIsSettingsOpen(true)}
-            title="Cloud Sync Settings / ಕ್ಲೌಡ್ ಸಿಂಕ್ ಸೆಟ್ಟಿಂಗ್ಸ್"
-            style={{ borderColor: supabase ? 'var(--success)' : '' }}
-          >
-            {supabase ? <Cloud size={18} style={{ color: 'var(--success)' }} /> : <CloudOff size={18} />}
-            <span>{supabase ? 'Synced / ಕ್ಲೌಡ್ ಸಿಂಕ್' : 'Local / ಲೋಕಲ್'}</span>
-          </button>
+
 
           {/* Language Switcher */}
           <button 
