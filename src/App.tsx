@@ -947,7 +947,10 @@ function App() {
                 <p style={{ marginBottom: '0.5rem' }}>1. Create a free account at <strong>supabase.com</strong> and create a project.</p>
                 <p style={{ marginBottom: '0.5rem' }}>2. Go to the <strong>SQL Editor</strong> in Supabase and run this script to create the table:</p>
                 <pre style={{ padding: '0.5rem', backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: '4px', overflowX: 'auto', fontSize: '0.75rem', fontFamily: 'monospace' }}>
-{`create table tasks (
+{`-- Drop the table if it already exists
+drop table if exists tasks cascade;
+
+create table tasks (
   id text primary key,
   title text not null,
   description text,
