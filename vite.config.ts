@@ -12,7 +12,7 @@ export default defineConfig({
       manifest: {
         name: 'G V M Work list',
         short_name: 'GVM Work',
-        description: 'Daily tasks manager in English & Kannada',
+        description: 'GVM Work list',
         theme_color: '#6366f1',
         background_color: '#0b071a',
         display: 'standalone',

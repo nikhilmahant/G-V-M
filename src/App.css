@@ -1,24 +1,24 @@
 :root {
-  --header-bg: #10b981; /* A nice vibrant green */
+  --header-bg: #159b52; /* Matched exactly to the screenshot's green */
   --header-text: #ffffff;
   --row-bg: #ffffff;
-  --row-hover: #f8fafc;
-  --border-color: #cbd5e1;
-  --text-main: #334155;
-  --text-dark: #0f172a;
+  --row-hover: #f1f5f9;
+  --border-color: #333333; /* Darker borders to match screenshot */
+  --text-main: #111111;
+  --text-dark: #000000;
 }
 
 body {
   margin: 0;
   padding: 0;
-  background-color: #f1f5f9;
+  background-color: #ffffff;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: var(--text-dark);
 }
 
 .app-container {
   min-height: 100vh;
-  padding: 1.5rem;
+  padding: 0;
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -26,26 +26,32 @@ body {
 
 .spreadsheet-wrapper {
   width: 100%;
-  max-width: 1200px;
+  max-width: 100%; /* Take up the entire screen */
   background: var(--row-bg);
-  border-radius: 8px;
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  overflow: hidden;
-  border: 1px solid var(--border-color);
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border-color);
 }
 
 /* Header Banner */
 .spreadsheet-banner {
   background-color: var(--header-bg);
-  padding: 0.75rem 1.5rem;
+  padding: 1rem 1.5rem;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
+}
+
+.header-title {
+  color: var(--header-text);
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .completion-stats {
   color: var(--header-text);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-style: italic;
   font-weight: 500;
   letter-spacing: 0.5px;
@@ -55,14 +61,15 @@ body {
 .spreadsheet-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
+  table-layout: auto; /* Let browser handle responsive column widths */
 }
 
 /* Columns width */
-.col-check { width: 50px; }
-.col-date { width: 140px; }
-.col-task { width: auto; }
-.col-name { width: 250px; }
+.col-serial { width: 5%; min-width: 40px; text-align: center; }
+.col-date { width: 15%; min-width: 120px; }
+.col-task { width: 55%; }
+.col-name { width: 20%; min-width: 150px; }
+.col-check { width: 5%; min-width: 40px; text-align: center; }
 
 /* Table Header */
 .spreadsheet-table th {
@@ -70,8 +77,9 @@ body {
   color: var(--header-text);
   padding: 0.75rem 1rem;
   font-size: 0.9rem;
-  font-weight: 600;
-  text-align: left;
+  font-weight: 700;
+  text-align: center; /* Changed from left to center for headers */
+  text-transform: uppercase;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -83,7 +91,7 @@ body {
 .spreadsheet-table td {
   border: 1px solid var(--border-color);
   padding: 0;
-  height: 42px;
+  height: 48px; /* Slightly taller rows for better touch targets */
   position: relative;
 }
 
@@ -113,9 +121,11 @@ body {
 
 /* Date input specific */
 .cell-input[type="date"] {
-  font-family: monospace;
-  font-size: 0.9rem;
+  font-family: 'Inter', monospace;
+  font-size: 0.95rem;
+  font-weight: 500;
   cursor: pointer;
+  text-align: center;
 }
 .cell-input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
@@ -134,8 +144,8 @@ body {
 }
 
 .cell-checkbox {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   cursor: pointer;
   accent-color: var(--header-bg);
 }
@@ -148,10 +158,16 @@ body {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .app-container {
+    padding: 0;
+  }
   .spreadsheet-wrapper {
     overflow-x: auto;
+    border-radius: 0;
+    border: none;
+    -webkit-overflow-scrolling: touch;
   }
   .spreadsheet-table {
-    min-width: 600px;
+    min-width: 800px;
   }
 }
