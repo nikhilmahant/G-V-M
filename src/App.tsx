@@ -51,7 +51,7 @@ const translations = {
 
 function App() {
   const [lang, setLang] = useState<'en' | 'kn'>(() => {
-    return (localStorage.getItem('gvm_lang') as 'en' | 'kn') || 'en';
+    return (localStorage.getItem('gvm_lang') as 'en' | 'kn') || 'kn';
   });
 
   const toggleLang = () => {
@@ -254,8 +254,7 @@ function App() {
                 {/* Due Date */}
                 <td>
                   <input
-                    type="text"
-                    placeholder={t.datePlaceholder}
+                    type="date"
                     className="cell-input"
                     value={task.dueDate || ''}
                     onChange={(e) => updateTaskState(task.id, 'dueDate', e.target.value)}
