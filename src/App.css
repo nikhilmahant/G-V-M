@@ -162,12 +162,36 @@ body {
     padding: 0;
   }
   .spreadsheet-wrapper {
-    overflow-x: auto;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
     border-radius: 0;
     border: none;
-    -webkit-overflow-scrolling: touch;
   }
   .spreadsheet-table {
-    min-width: 800px;
+    min-width: 100%;
+    table-layout: fixed; /* Force it to stay within bounds on mobile */
+  }
+  
+  /* Redefine column widths for mobile to fit everything */
+  .col-serial { width: 10%; min-width: unset; font-size: 0.8rem; }
+  .col-date { width: 22%; min-width: unset; font-size: 0.8rem; }
+  .col-task { width: 35%; min-width: unset; }
+  .col-name { width: 23%; min-width: unset; font-size: 0.8rem; }
+  .col-check { width: 10%; min-width: unset; }
+
+  /* Scale down inputs for mobile */
+  .cell-input {
+    padding: 0 0.25rem;
+    font-size: 0.85rem;
+  }
+  .spreadsheet-table th {
+    padding: 0.5rem 0.2rem;
+    font-size: 0.75rem;
+    word-wrap: break-word;
+  }
+  .header-title {
+    font-size: 0.95rem;
+  }
+  .completion-stats {
+    font-size: 0.8rem;
   }
 }

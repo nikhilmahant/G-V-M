@@ -26,7 +26,43 @@ const generateEmptyTask = (): Task => ({
   createdAt: new Date().toISOString()
 });
 
+const translations = {
+  en: {
+    title: 'G V M Tasks',
+    completed: 'completed',
+    sno: 'S.No',
+    date: 'Date',
+    task: 'Task',
+    name: 'NAME',
+    addRow: '+ Add Row',
+    datePlaceholder: 'DD/MM/YYYY'
+  },
+  kn: {
+    title: 'ಜಿ ವಿ ಎಂ ಕಾರ್ಯಗಳು',
+    completed: 'ಪೂರ್ಣಗೊಂಡಿದೆ',
+    sno: 'ಕ್ರ.ಸಂ',
+    date: 'ದಿನಾಂಕ',
+    task: 'ಕಾರ್ಯ',
+    name: 'ಹೆಸರು',
+    addRow: '+ ಸಾಲು ಸೇರಿಸಿ',
+    datePlaceholder: 'ದಿನ/ತಿಂ/ವರ್ಷ'
+  }
+};
+
 function App() {
+  const [lang, setLang] = useState<'en' | 'kn'>(() => {
+    return (localStorage.getItem('gvm_lang') as 'en' | 'kn') || 'en';
+  });
+
+  const toggleLang = () => {
+    setLang(prev => {
+      const next = prev === 'en' ? 'kn' : 'en';
+      localStorage.setItem('gvm_lang', next);
+      return next;
+    });
+  };
+
+  const t = translations[lang];
   // --- STATE ---
   const [tasks, setTasks] = useState<Task[]>(() => {
     let parsed: any[] = [];
@@ -171,20 +207,38 @@ function App() {
         
         {/* Header / Banner */}
         <div className="spreadsheet-banner">
-          <div className="header-title">G V M Tasks</div>
-          <span className="completion-stats">
-            {completedCount}/{totalCount} completed
-          </span>
+          <div className="header-title">{t.title}</div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span className="completion-stats">
+              {completedCount}/{totalCount} {t.completed}
+            </span>
+            <button 
+              onClick={toggleLang}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: '1px solid rgba(255,255,255,0.4)',
+                color: '#fff',
+                padding: '0.25rem 0.75rem',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '0.85rem'
+              }}
+            >
+              {lang === 'en' ? 'EN | ಕ' : 'ಕ | EN'}
+            </button>
+          </div>
         </div>
 
         {/* Spreadsheet Table */}
         <table className="spreadsheet-table">
           <thead>
             <tr>
-              <th className="col-serial center">S.No</th>
-              <th className="col-date">Date</th>
-              <th className="col-task">Task</th>
-              <th className="col-name">NAME</th>
+              <th className="col-serial center">{t.sno}</th>
+              <th className="col-date">{t.date}</th>
+              <th className="col-task">{t.task}</th>
+              <th className="col-name">{t.name}</th>
               <th className="col-check center">✓</th>
             </tr>
           </thead>
@@ -201,7 +255,7 @@ function App() {
                 <td>
                   <input
                     type="text"
-                    placeholder="DD/MM/YYYY"
+                    placeholder={t.datePlaceholder}
                     className="cell-input"
                     value={task.dueDate || ''}
                     onChange={(e) => updateTaskState(task.id, 'dueDate', e.target.value)}
@@ -274,7 +328,7 @@ function App() {
               fontSize: '0.9rem'
             }}
           >
-            + Add Row
+            {t.addRow}
           </button>
         </div>
       </div>
